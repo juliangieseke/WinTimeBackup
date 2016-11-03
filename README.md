@@ -1,6 +1,8 @@
 # WinTimeBackup - Time Machine for Windows
+
 by Julian Gieseke (mail@juliangieseke.de)
-basedon "DeloreanCopy.bat" from ln.exe by Hermann Schinagel (Hermann.Schinagl@gmx.net)
+
+based on "DeloreanCopy.bat" from ln.exe by Hermann Schinagel (Hermann.Schinagl@gmx.net)
 
 This Script is provided AS IS!
 
