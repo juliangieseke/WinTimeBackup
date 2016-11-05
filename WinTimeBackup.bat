@@ -32,7 +32,7 @@
 
 :: Set Output to cmd (uses echo)
 :: 0 = nothing, 1 = some status info @ stdout
-set DEBUG=1
+set DEBUG=2
 
 :: ln.exe (change if yours isnt in PATH)
 set LN=ln.exe
@@ -46,11 +46,11 @@ set SRC=D:
 
 :: Destination Folder
 :: you can use %~dp0 if your script is at destionation folder
-set DST=%~dp0
+::set DST=%~dp0
 :: or parameter
 ::set DST=%~1
 :: or something fixed
-::set DST=E:\Backups
+set DST=S:\Github
 
 :: Name of the Backup, used for subfolder if USESUB=1
 ::set BKPNAME=Backup
@@ -124,15 +124,14 @@ set INTERVALFOURTH=2
 :: ========================================================================= ::
 :: INCLUDES/EXCLUDES
 :: ========================================================================= ::
-:: !!! All options also apply when moving backups to the next set !!!
 
 set OPT=--excludedir "Archiv"
 set OPT=%OPT% --excludedir "Aufnahmen"
 set OPT=%OPT% --excludedir "Bilder"
 set OPT=%OPT% --excludedir "Dokumente"
-::set OPT=%OPT% --excludedir "Filme"
+set OPT=%OPT% --excludedir "Filme"
 set OPT=%OPT% --excludedir "H”rbcher"
-set OPT=%OPT% --excludedir "Kamera Upload"
+::set OPT=%OPT% --excludedir "Kamera Upload"
 set OPT=%OPT% --excludedir "Lightroom"
 set OPT=%OPT% --excludedir "Musik"
 set OPT=%OPT% --excludedir "Resilio"
@@ -147,7 +146,7 @@ set OPT=%OPT% --exclude "Thumbs.db"
 set OPT=%OPT% --excludedir ".sync"
 set OPT=%OPT% --excludedir ".git"
 set OPT=%OPT% --excludedir ".svn"
-set OPT=%OPT% --exclude "*.ts"
+::set OPT=%OPT% --exclude "*.ts"
 
 
 :: ========================================================================= ::
@@ -219,6 +218,8 @@ pushd %DST%
 if not exist "%LOGFILEPATH%" mkdir "%LOGFILEPATH%"
 set OPT=%OPT% --quiet %LOGLEVEL%
 
+if %DEBUG% GTR 0 set OPT=%OPT% --progress
+
 :: ========================================================================= ::
 :: PART I: Copying new Files
 :: ========================================================================= ::
@@ -232,13 +233,13 @@ if %DEBUG% GTR 0 echo          To: "%DST%"
 :: @TODO Need to catch CTRL+c somehow to rename failed backups (see below), otherwise after one 
 :: failed no more backups are started...
 :: http://stackoverflow.com/questions/27130050/batch-script-if-user-press-ctrlc-do-a-command-before-exitting
-::if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%COPYSUFFIX%" (
-::	if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
-::	if %DEBUG% GTR 0 echo Already Backing up, skipping this run!
-::	
-::	goto errorexit
-::)
-:: maybe better: check at the end if finished backup with same id exists. (see below)
+if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%COPYSUFFIX%" (
+	if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
+	if %DEBUG% GTR 0 echo Backup already running or script was killed before. 
+	if %DEBUG% GTR 0 echo Starting a new Backup, future backups will use the newest one. 
+	if %DEBUG% GTR 0 echo This CAN cause issues - check your Backups! 
+)
+:: @todo find a better solution, it looks like lk can somehow continue running backups?!
 
 
 if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
@@ -252,7 +253,7 @@ if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMEFIRST%" (
 	
 	if %DEBUG% GTR 0 echo Found old backup: "!LastBackup!"
 
-	set LNPARAMS=--output "%LOGFILEPATH%\%DATETIME%%DLMTR%!NextId!.copy.log" --delorean "%SRC%" "%LNDST%\!LastBackup!" "%LNDST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%"
+	set LNPARAMS=--output "%LOGFILEPATH%\%DATETIME%%DLMTR%!NextId!.log" --delorean "%SRC%" "%LNDST%\!LastBackup!" "%LNDST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%"
 	
 ) else (
 	:: first backup! copying the files
@@ -260,45 +261,55 @@ if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMEFIRST%" (
 	
 	if %DEBUG% GTR 0 echo No old backup found.
 	
-	set LNPARAMS=--output "%LOGFILEPATH%\%DATETIME%%DLMTR%!NextId!.copy.log" --copy "%SRC%" "%LNDST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%"
+	set LNPARAMS=--output "%LOGFILEPATH%\%DATETIME%%DLMTR%!NextId!.log" --copy "%SRC%" "%LNDST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%"
 )
 
 if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
 if %DEBUG% GTR 0 echo Copying to "%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%"...
 
 
-if %DEBUG% GTR 0 echo.
-if %DEBUG% GTR 0 echo %LN% %OPT% %LNPARAMS%
+if %DEBUG% GTR 1 echo.
+if %DEBUG% GTR 1 echo %LN% %OPT% %LNPARAMS%
 
 :: calling ln.exe here
 %LN% %OPT% %LNPARAMS%
 
-if %DEBUG% GTR 0 echo.
-if %DEBUG% GTR 0 echo %LN% exit code was  %errorlevel%
+if %DEBUG% GTR 1 echo.
+if %DEBUG% GTR 1 echo %LN% exit code was %errorlevel%
 	
 if %errorlevel% NEQ 0 ( 
 	if %DEBUG% GTR 0 echo.
-	if %DEBUG% GTR 0 echo Copying failed. See Logfile "%LOGFILEPATH%\%DATETIME%%DLMTR%%NextId%.copy.log" for details
+	if %DEBUG% GTR 0 echo Copying failed. See Logfile "%LOGFILEPATH%\%DATETIME%%DLMTR%%NextId%.log" for details
 	
-	%LN% --quiet --move "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%" "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%ERRORSUFFIX%"
+	%LN% --quiet --move "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%" "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%ERRORSUFFIX%" > nul
 	
 	goto errorexit
 )
 
 :: what happens if second backup is faster then first?
 :: what does that mean for data consistency?
-:: @TODO: test it!!
-if exist "%DATEFORMAT%%DLMTR%%NextID%" (
-	if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
-	if %DEBUG% GTR 0 echo Backup with same ID already exists, marking this one as duplicate.
+:: @TODO: doesnt work when folder was renamed while this script runs..
+if exist "%DATEFORMAT%%DLMTR%%NextID%%DLMTR%%NAMEFIRST%" (
+	if %DEBUG% GTR 0 echo.
+	if %DEBUG% GTR 0 echo Finished backup with same ID "%NextId%" already exists, marking this one as duplicate.
 	
-	%LN% --quiet --move "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%" "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%DOUBLESUFFIX%"
+	%LN% --quiet --move "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%" "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%DOUBLESUFFIX%" > nul
 	
 	goto errorexit
 )
 
 if %DEBUG% GTR 0 echo.
 if %DEBUG% GTR 0 echo Copying successful.
+if %DEBUG% GTR 0 echo.
+if %DEBUG% GTR 0 echo Renaming folder "%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%"
+if %DEBUG% GTR 0 echo              to "%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%"
+
+%LN% --quiet --move "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%" "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%" > nul
+
+if %errorlevel% EQU 0 (
+	if %DEBUG% GTR 0 echo. && echo Backup successful.
+)
+
 
 :: ========================================================================= ::
 :: PART II: Checking/Renaming old Backups
@@ -309,26 +320,25 @@ if %DEBUG% GTR 0 echo Copying successful.
 set /a INTERVALTHIRD=%INTERVALTHIRD%*%INTERVALSECOND%
 set /a INTERVALFOURTH=%INTERVALFOURTH%*%INTERVALTHIRD% 
 
-:: decrease KEEPFIRST by 1 because the newest backup still 
-:: has %PROCESSSUFFIX% and isnt counted and skip=0 wont work...
-if %KEEPFIRST% GTR 1 set /a KEEPFIRST=%KEEPFIRST%-1
+if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
+if %DEBUG% GTR 0 echo Cleaning up old Backups
 
 if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMEFIRST%" (
-	if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
+	if %DEBUG% GTR 0 echo.
 	if %DEBUG% GTR 0 echo Checking old %NAMEFIRST% backups ...
 
 	for /f "skip=%KEEPFIRST% tokens=1,2 delims=%DLMTR%" %%a in ('dir /b /A:D /O:-N "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMEFIRST%"') do (
 		set /a MODULO=%%b %% %INTERVALSECOND%
 		
 		if %DEBUG% GTR 0 echo.
-		if %DEBUG% GTR 0 echo Modulo of "%%a%DLMTR%%%b%DLMTR%%NAMEFIRST%" with Interval %INTERVALSECOND% is !MODULO!
+		if %DEBUG% GTR 1 echo Modulo of "%%a%DLMTR%%%b%DLMTR%%NAMEFIRST%" with Interval %INTERVALSECOND% is !MODULO!
 		
 		if !MODULO! NEQ 0 (
 			if %DEBUG% GTR 0 echo Removing old backup set "%%a%DLMTR%%%b%DLMTR%%NAMEFIRST%" ...
 			%LN% --deeppathdelete "%%a%DLMTR%%%b%DLMTR%%NAMEFIRST%" > nul
 			if %DELETELOGFILES%==1 (
-				if %DEBUG% GTR 0 echo Removing logfiles for "%%a%DLMTR%%%b%DLMTR%%NAMEFIRST%" ...
-				del "%LOGFILEPATH%\%%a%DLMTR%%%b*.log" > nul
+				if %DEBUG% GTR 0 echo Removing Logfile for "%%a%DLMTR%%%b%DLMTR%%NAMEFIRST%" ...
+				del "%LOGFILEPATH%\%%a%DLMTR%%%b.log" > nul
 			)
 			
 		) else (
@@ -341,22 +351,22 @@ if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMEFIRST%" (
 )
 
 if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMESECOND%" (
-	if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
+	if %DEBUG% GTR 0 echo.
 	if %DEBUG% GTR 0 echo Checking old %NAMESECOND% backups ...
 
 	for /f "skip=%KEEPSECOND% tokens=1,2 delims=%DLMTR%" %%a in ('dir /b /A:D /O:-N "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMESECOND%"') do (
 		set /a MODULO=%%b %% %INTERVALTHIRD%
 	
 		if %DEBUG% GTR 0 echo.
-		if %DEBUG% GTR 0 echo Modulo of "%%a%DLMTR%%%b%DLMTR%%NAMESECOND%" with Interval %INTERVALTHIRD% is !MODULO!
+		if %DEBUG% GTR 1 echo Modulo of "%%a%DLMTR%%%b%DLMTR%%NAMESECOND%" with Interval %INTERVALTHIRD% is !MODULO!
 	
 		if !MODULO! NEQ 0 (
 			if %DEBUG% GTR 0 echo Removing old backup set "%%a%DLMTR%%%b%DLMTR%%NAMESECOND%" ...
 			%LN% --deeppathdelete "%%a%DLMTR%%%b%DLMTR%%NAMESECOND%" > nul
 			
 			if %DELETELOGFILES%==1 (
-				if %DEBUG% GTR 0 echo Removing logfiles for "%%a%DLMTR%%%b%DLMTR%%NAMESECOND%" ...
-				del "%LOGFILEPATH%\%%a%DLMTR%%%b*.log" > nul
+				if %DEBUG% GTR 0 echo Removing Logfile for "%%a%DLMTR%%%b%DLMTR%%NAMESECOND%" ...
+				del "%LOGFILEPATH%\%%a%DLMTR%%%b.log" > nul
 			)
 		) else (
 			if %DEBUG% GTR 0 echo Renaming old backup set "%%a%DLMTR%%%b%DLMTR%%NAMESECOND%"
@@ -367,22 +377,22 @@ if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMESECOND%" (
 )
 
 if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMETHIRD%" (
-	if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
+	if %DEBUG% GTR 0 echo.
 	if %DEBUG% GTR 0 echo Checking old %NAMETHIRD% backups ...
 
 	for /f "skip=%KEEPTHIRD% tokens=1,2 delims=%DLMTR%" %%a in ('dir /b /A:D /O:-N "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMETHIRD%"') do (
 		set /a MODULO=%%b %% %INTERVALFOURTH%
 	
 		if %DEBUG% GTR 0 echo.
-		if %DEBUG% GTR 0 echo Modulo of "%%a%DLMTR%%%b%DLMTR%%NAMETHIRD%" with Interval %INTERVALFOURTH% is !MODULO!
+		if %DEBUG% GTR 1 echo Modulo of "%%a%DLMTR%%%b%DLMTR%%NAMETHIRD%" with Interval %INTERVALFOURTH% is !MODULO!
 		
 		if !MODULO! NEQ 0 (
 			if %DEBUG% GTR 0 echo Removing old backup set "%%a%DLMTR%%%b%DLMTR%%NAMETHIRD%" ...
 			%LN% --deeppathdelete "%%a%DLMTR%%%b%DLMTR%%NAMETHIRD%" > nul
 
 			if %DELETELOGFILES%==1 (
-				if %DEBUG% GTR 0 echo Removing logfiles for "%%a%DLMTR%%%b%DLMTR%%NAMETHIRD%" ...
-				del "%LOGFILEPATH%\%%a%DLMTR%%%b*.log" > nul
+				if %DEBUG% GTR 0 echo Removing Logfile for "%%a%DLMTR%%%b%DLMTR%%NAMETHIRD%" ...
+				del "%LOGFILEPATH%\%%a%DLMTR%%%b.log" > nul
 			)
 		) else (
 			if %DEBUG% GTR 0 echo Renaming old backup set "%%a%DLMTR%%%b%DLMTR%%NAMETHIRD%" 
@@ -393,7 +403,7 @@ if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMETHIRD%" (
 )
 
 if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMEFOURTH%" (
-	if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
+	if %DEBUG% GTR 0 echo.
 	if %DEBUG% GTR 0 echo Checking old %NAMEFOURTH% backups ...
 
 	for /f "skip=%KEEPFOURTH% tokens=1,2 delims=%DLMTR%" %%a in ('dir /b /A:D /O:-N "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMEFOURTH%"') do (
@@ -402,22 +412,13 @@ if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMEFOURTH%" (
 		%LN% --deeppathdelete "%%a%DLMTR%%%b%DLMTR%%NAMEFOURTH%" > nul
 		
 		if %DELETELOGFILES%==1 (
-			if %DEBUG% GTR 0 echo Removing logfiles for "%%a%DLMTR%%%b%DLMTR%%NAMEFOURTH%" ...
-			del "%LOGFILEPATH%\%%a%DLMTR%%%b*.log" > nul
+			if %DEBUG% GTR 0 echo Removing Logfile for "%%a%DLMTR%%%b%DLMTR%%NAMEFOURTH%" ...
+			del "%LOGFILEPATH%\%%a%DLMTR%%%b.log" > nul
 		)
 	)
 )
-
-:: ========================================================================= ::
-:: PART THREE: Renaming last backup (removing %PROCESSSUFFIX%)
-:: ========================================================================= ::
-
-:: @TODO: check if really successful!
-if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
-if %DEBUG% GTR 0 echo Renaming folder "%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%"
-if %DEBUG% GTR 0 echo              to "%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%"
-
-%LN% --quiet --move "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%" "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%" > nul
+if %DEBUG% GTR 0 echo.
+if %DEBUG% GTR 0 echo Cleanup done.
 
 
 :errorexit
