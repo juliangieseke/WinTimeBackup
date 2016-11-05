@@ -17,9 +17,6 @@
 :: ========================================================================= ::
 :: Changelog:
 ::
-:: v 0.1 alpha 2
-:: - changed logfile deletion code
-::
 :: v 0.1 alpha 1 (first working version)
 :: - basic time machine like functionality provided
 :: ========================================================================= ::
@@ -34,7 +31,7 @@
 :: ========================================================================= ::
 
 :: Set Output to cmd (uses echo)
-:: 0 = nothing, 1 = some status, 2 = technical stuff
+:: 0 = nothing, 1 = some status info @ stdout
 set DEBUG=1
 
 :: ln.exe (change if yours isnt in PATH)
@@ -179,14 +176,14 @@ set LNTIMES=%LNTIME:~6,2%
 :: dont use . (filenames)
 :: space and underscore should be ok :)
 set "DLMTR= "
+
 :: has to be one token (no space allowed)!
 :: be careful with sorting - this has to be distinct!
 set DATETIME=%LNDATEY%%LNDATEM%%LNDATED%-%LNTIMEH%%LNTIMEM%%LNTIMES%
 set DATEFORMAT=????????-??????
 
-
 :: set suffix for copying process.
-set PROGRESSSUFFIX=wip
+set COPYSUFFIX=wip
 set ERRORSUFFIX=failed
 
 :: cut off trailing slashes from SRC & DST
@@ -240,7 +237,7 @@ if %DEBUG% GTR 0 echo          To: "%DST%"
 :: @TODO Need to catch CTRL+c somehow to rename failed backups (see below), otherwise after one 
 :: failed no more backups are started...
 :: http://stackoverflow.com/questions/27130050/batch-script-if-user-press-ctrlc-do-a-command-before-exitting
-if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%PROGRESSSUFFIX%" (
+if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%COPYSUFFIX%" (
 	if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
 	if %DEBUG% GTR 0 echo Already Backing up, skipping this run!
 	
@@ -259,7 +256,7 @@ if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMEFIRST%" (
 	
 	if %DEBUG% GTR 0 echo Found old backup: "!LastBackup!"
 
-	set LNPARAMS=--output "%RLOGFILEPATH%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%.copy.log" --delorean "%SRC%" "%LNDEST%\!LastBackup!" "%LNDEST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%PROGRESSSUFFIX%"
+	set LNPARAMS=--output "%RLOGFILEPATH%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%.copy.log" --delorean "%SRC%" "%LNDEST%\!LastBackup!" "%LNDEST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%"
 	
 ) else (
 	:: first backup! copying the files
@@ -268,11 +265,11 @@ if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAMEFIRST%" (
 	
 	if %DEBUG% GTR 0 echo No old backup found.
 	
-	set LNPARAMS=--output "%RLOGFILEPATH%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%.copy.log" --copy "%SRC%" "%LNDEST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%PROGRESSSUFFIX%"
+	set LNPARAMS=--output "%RLOGFILEPATH%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%.copy.log" --copy "%SRC%" "%LNDEST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%"
 )
 
 if %DEBUG% GTR 0 echo.
-if %DEBUG% GTR 0 echo Copying to "%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%PROGRESSSUFFIX%"...
+if %DEBUG% GTR 0 echo Copying to "%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%"...
 
 
 if %DEBUG% GTR 0 echo.
@@ -287,7 +284,7 @@ if %errlev% NEQ 0 (
 	if %DEBUG% GTR 0 echo.
 	if %DEBUG% GTR 0 echo Copying failed! See Logs for details
 	
-	%LN% %OPT% --output "%RLOGFILEPATH%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%.move.errlog" --move "%LNDEST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%PROGRESSSUFFIX%" "%LNDEST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%ERRORSUFFIX%"
+	%LN% %OPT% --output "%RLOGFILEPATH%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%.move.errlog" --move "%LNDEST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%" "%LNDEST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAMEFIRST%%DLMTR%%ERRORSUFFIX%"
 	
 	goto errorexit
 )
@@ -411,10 +408,10 @@ popd
 
 :: @TODO: check if really successful!
 if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
-if %DEBUG% GTR 0 echo Renaming folder "%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%PROGRESSSUFFIX%"
+if %DEBUG% GTR 0 echo Renaming folder "%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%"
 if %DEBUG% GTR 0 echo              to "%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%"
 
-%LN% --quiet --move "%LNDEST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%PROGRESSSUFFIX%" "%LNDEST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%" > nul
+%LN% --quiet --move "%LNDEST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%%DLMTR%%COPYSUFFIX%" "%LNDEST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAMEFIRST%" > nul
 
 
 :errorexit
