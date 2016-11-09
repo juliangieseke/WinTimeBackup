@@ -14,6 +14,9 @@ This script provides a simple implementation of a File History Snapshot like Bac
 ## Warning
 **This Script isnt tested very well yet and as it is my first Batchfile most of the code is very bad, so use at your own Risk and dont blame me if something goes wrong.**
 
+## Batchfile? srsly?
+No. I dont think that I will change very much in the future, Batch is just too ****... ;)
+
 ## Changelog
 
 v 0.1 alpha (first working version)
