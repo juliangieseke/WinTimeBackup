@@ -58,7 +58,7 @@ set DST=S:\Github
 :: if you want you can use a paramter for this
 ::set BKPNAME=%~1
 :: or simply the filename of this script
-set BKPNAME=%~n0
+set BKPNAME=TestA
 
 :: Puts all Backups and Logs into a Subfolder named BKPNAME.
 :: set to 1 if you want to use DST/BKPNAME as root folder for Backup 
@@ -73,9 +73,9 @@ set LOGLEVEL=2
 :: use . if for same folder as Backups. 
 ::set LOGFILENAME=.
 :: or give folder name/path
-set LOGFILEPATH=log
+::set LOGFILEPATH=log
 :: that SHOULD work
-::set LOGFILEPATH=..\log
+set LOGFILEPATH=..\log
 
 :: if 1 logs for deleted snapshots will be deleted
 set DELETELOGFILES=1
@@ -209,17 +209,17 @@ if %USESUB% EQU 1 (
 	set LNDST=%LNDST%\%BKPNAME%
 	set DST=%DST%\%BKPNAME%
 	set LOGFILEPATH=%LOGFILEPATH%
-	if not exist "%BKPNAME%" mkdir "%BKPNAME%"
+	if not exist "%DST%\%BKPNAME%" mkdir "%DST%\%BKPNAME%"
 )
 
-:: store DST as CD
-pushd %DST%
-
 :: add loglevel & loglevel
-if not exist "%LOGFILEPATH%" mkdir "%LOGFILEPATH%"
+if not exist "%DST%\%LOGFILEPATH%" mkdir "%DST%\%LOGFILEPATH%"
 set OPT=%OPT% --quiet %LOGLEVEL%
 
 if %DEBUG% GTR 1 set OPT=%OPT% --progress
+
+:: store DST as CD
+pushd %DST%
 
 :: ========================================================================= ::
 :: PART I: Copying new Files
@@ -256,7 +256,7 @@ if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAME1%" (
 	
 	if %DEBUG% GTR 0 echo Found old backup: "!LastBackup!"
 
-	set LNPARAMS=--output "%LOGFILEPATH%\%DATETIME%%DLMTR%!NextId!.log" --delorean "%SRC%" "%LNDST%\!LastBackup!" "%LNDST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAME1%%DLMTR%%COPYSUFFIX%"
+	set LNPARAMS=--output "%LOGFILEPATH%\%BKPNAME%%DLMTR%%DATETIME%%DLMTR%!NextId!.log" --delorean "%SRC%" "%LNDST%\!LastBackup!" "%LNDST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAME1%%DLMTR%%COPYSUFFIX%"
 	
 ) else (
 	:: first backup! copying the files
@@ -264,7 +264,7 @@ if exist "%DATEFORMAT%%DLMTR%*%DLMTR%%NAME1%" (
 	
 	if %DEBUG% GTR 0 echo No old backup found.
 	
-	set LNPARAMS=--output "%LOGFILEPATH%\%DATETIME%%DLMTR%!NextId!.log" --copy "%SRC%" "%LNDST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAME1%%DLMTR%%COPYSUFFIX%"
+	set LNPARAMS=--output "%LOGFILEPATH%\%BKPNAME%%DLMTR%%DATETIME%%DLMTR%!NextId!.log" --copy "%SRC%" "%LNDST%\%DATETIME%%DLMTR%!NextId!%DLMTR%%NAME1%%DLMTR%%COPYSUFFIX%"
 )
 
 if %DEBUG% GTR 0 echo. && echo ========================================================================= && echo.
@@ -285,7 +285,7 @@ if %DEBUG% GTR 1 echo %LN% exit code was %errorlevel%
 	
 if %errorlevel% NEQ 0 ( 
 	if %DEBUG% GTR 0 echo.
-	if %DEBUG% GTR 0 echo Copying failed. See Logfile "%LOGFILEPATH%\%DATETIME%%DLMTR%%NextId%.log" for details
+	if %DEBUG% GTR 0 echo Copying failed. See Logfile "%LOGFILEPATH%\%BKPNAME%%DLMTR%%DATETIME%%DLMTR%%NextId%.log" for details
 	
 	%LN% --quiet --move "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAME1%%DLMTR%%COPYSUFFIX%" "%LNDST%\%DATETIME%%DLMTR%%NextId%%DLMTR%%NAME1%%DLMTR%%ERRORSUFFIX%" > nul
 	
@@ -358,7 +358,7 @@ for /f "%SKIP%tokens=1,2 delims=%DLMTR%" %%a in ('dir /b /A:D /O:-N "%DATEFORMAT
 		%LN% --deeppathdelete "%%a%DLMTR%%%b%DLMTR%%NAME1%" > nul
 		if %DELETELOGFILES%==1 (
 			if %DEBUG% GTR 1 echo Removing Logfile for "%%a%DLMTR%%%b%DLMTR%%NAME1%" ...
-			del "%LOGFILEPATH%\%%a%DLMTR%%%b.log" > nul
+			del "%LOGFILEPATH%\%BKPNAME%%DLMTR%%%a%DLMTR%%%b.log" > nul
 		)
 		
 	) else (
@@ -398,7 +398,7 @@ for /f "%SKIP%tokens=1,2 delims=%DLMTR%" %%a in ('dir /b /A:D /O:-N "%DATEFORMAT
 		
 		if %DELETELOGFILES%==1 (
 			if %DEBUG% GTR 1 echo Removing Logfile for "%%a%DLMTR%%%b%DLMTR%%NAME2%" ...
-			del "%LOGFILEPATH%\%%a%DLMTR%%%b.log" > nul
+			del "%LOGFILEPATH%\%BKPNAME%%DLMTR%%%a%DLMTR%%%b.log" > nul
 		)
 	) else (
 		if %DEBUG% GTR 0 echo Renaming old backup set "%%a%DLMTR%%%b%DLMTR%%NAME2%"
@@ -438,7 +438,7 @@ for /f "%SKIP%tokens=1,2 delims=%DLMTR%" %%a in ('dir /b /A:D /O:-N "%DATEFORMAT
 
 		if %DELETELOGFILES%==1 (
 			if %DEBUG% GTR 1 echo Removing Logfile for "%%a%DLMTR%%%b%DLMTR%%NAME3%" ...
-			del "%LOGFILEPATH%\%%a%DLMTR%%%b.log" > nul
+			del "%LOGFILEPATH%\%BKPNAME%%DLMTR%%%a%DLMTR%%%b.log" > nul
 		)
 	) else (
 		if %DEBUG% GTR 0 echo Renaming old backup set "%%a%DLMTR%%%b%DLMTR%%NAME3%" 
@@ -468,7 +468,7 @@ for /f "%SKIP%tokens=1,2 delims=%DLMTR%" %%a in ('dir /b /A:D /O:-N "%DATEFORMAT
 	
 	if %DELETELOGFILES%==1 (
 		if %DEBUG% GTR 1 echo Removing Logfile for "%%a%DLMTR%%%b%DLMTR%%NAME4%" ...
-		del "%LOGFILEPATH%\%%a%DLMTR%%%b.log" > nul
+		del "%LOGFILEPATH%\%BKPNAME%%DLMTR%%%a%DLMTR%%%b.log" > nul
 	)
 )
 
